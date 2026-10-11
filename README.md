@@ -1,58 +1,70 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# NurseryPulse
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A small API for a multi-tenant nursery group: staff check children into and out of rooms, and a
+manager can see who's in a room right now. Each nursery group (tenant) is fully isolated from
+every other tenant on the same platform.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.3, Laravel 13
+- MySQL for local/dev runtime (see `.env`, set up for Homestead)
+- SQLite in-memory for automated tests (Laravel's default test config — fast, zero setup, and
+  kept deliberately separate from the dev database)
+- Pest for testing
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Setup
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. `composer install`
+2. `.env` is already present and configured for this project's Homestead site. If you're not
+   using Homestead, point `DB_*` at your own MySQL instance and create the database named in
+   `DB_DATABASE`.
+3. `php artisan key:generate` (skip if `APP_KEY` is already set)
+4. `php artisan migrate`
+5. One-time: add Pest (not in the base Laravel install) —
+   `composer require pestphp/pest pestphp/pest-plugin-laravel --dev --with-all-dependencies`
+   then `php artisan pest:install`
 
-## Learning Laravel
+## Running the tests
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```
+vendor/bin/pest
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Tests run against an in-memory SQLite database (configured in `phpunit.xml`), independent of
+whatever MySQL database you've set up for local running.
 
-## Contributing
+## Multi-tenancy
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Every request must carry an `X-Tenant-ID` header. `ResolveTenant` middleware reads it, rejects
+the request with a 400 if it's missing, and binds it into the service container as
+`CurrentTenant` for the rest of the request.
 
-## Code of Conduct
+Every tenant-owned model (`Room`, `Child`, `CheckIn`) uses a `BelongsToTenant` trait that:
+- adds a global Eloquent scope filtering every query by `tenant_id`, and
+- auto-stamps `tenant_id` on create.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+This means tenant filtering isn't something a controller or a future developer has to remember —
+it's structurally part of the model. It also means implicit route-model binding (e.g. `{room}` in
+a URL) will 404 instead of leaking when the id belongs to another tenant, since resolving it goes
+through the same scoped query.
 
-## Security Vulnerabilities
+## API
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+_(to be filled in once the check-in/check-out/occupants endpoints are built)_
 
-## License
+## The double check-in decision
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+_(to be filled in once that behaviour is implemented — see the brief's "one decision we leave to
+you")_
+
+## What I'd do with more time
+
+_(to be filled in)_
+
+## What I left out on purpose
+
+_(to be filled in)_
+
+## AI tool usage
+
+_(to be filled in)_
